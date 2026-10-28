@@ -2,9 +2,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from app.config import settings
+from app.config import settings, setup_logging
 from app.db import Base, SessionLocal, engine, make_engine, make_sessionmaker
 from app.errors import install_error_handlers
 from app.reminders import start_reminder_loop, stop_reminder_loop
@@ -17,6 +18,8 @@ def create_app(database_url: str | None = None, create_tables: bool = False) -> 
     url = database_url or settings.database_url
     db_engine = engine if database_url is None else make_engine(url)
     session_factory = SessionLocal if database_url is None else make_sessionmaker(db_engine)
+
+    setup_logging(settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -46,10 +49,12 @@ def create_app(database_url: str | None = None, create_tables: bool = False) -> 
     install_error_handlers(app)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["*"],
+        allow_origins=settings.cors_origins,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["*"],
+        allow_credentials=True,
     )
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
 
     @app.get("/health", tags=["santé"])
     def health():

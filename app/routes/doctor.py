@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.deps import get_session, require_doctor
 from app.errors import AgendaError
 from app.models import Appointment, AvailabilityRule, Doctor, Establishment, doctor_establishments
+from app.pagination import paginate
 from app.schemas import appointment_dict, doctor_public, establishment_dict, rule_dict
 from app.slots import free_slots, has_conflict, list_availability
 from app.utils import now_iso, random_id
@@ -213,10 +214,27 @@ def list_appointments(
         value = qp.get(field)
         if value is not None:
             conditions.append(getattr(Appointment, field) == value)
-    appts = session.scalars(
-        select(Appointment).where(*conditions).order_by(Appointment.date, Appointment.time)
+
+    page = int(qp.get("page", 1))
+    page_size = int(qp.get("page_size", 20))
+    page_size = min(page_size, 100)  # max 100 per page
+
+    result = paginate(
+        session,
+        Appointment,
+        conditions,
+        [Appointment.date, Appointment.time],
+        page=page,
+        page_size=page_size,
     )
-    return {"appointments": [appointment_dict(a) for a in appts]}
+
+    return {
+        "appointments": [appointment_dict(a) for a in result["items"]],
+        "total": result["total"],
+        "page": result["page"],
+        "page_size": result["page_size"],
+        "total_pages": result["total_pages"],
+    }
 
 
 @router.get("/appointments/{appointment_id}")

@@ -13,16 +13,25 @@ services:
       test: ["CMD-SHELL", "pg_isready -U agenda"]
       interval: 5s
       retries: 10
+    restart: unless-stopped
 
   api:
     build: .
     environment:
       DATABASE_URL: postgresql+psycopg://agenda:agenda@db:5432/agenda
+      CORS_ORIGINS: '["http://localhost:3000", "http://localhost:8080"]'
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "4400:4400"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4400/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 volumes:
   pgdata:

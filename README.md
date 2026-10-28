@@ -18,6 +18,8 @@ Quatre espaces :
 - Python ≥ 3.11 — FastAPI, SQLAlchemy 2, Alembic, Pydantic-settings (conventions `backend/employee-hub`)
 - PostgreSQL 16 (Docker) — schéma via migrations Alembic
 - pytest (36 scénarios bout en bout, `tests/test_smoke.py`)
+- ruff, black, mypy — linting et type checking
+- GZip middleware — compression des réponses
 
 ## Lancer avec Docker (recommandé)
 
@@ -47,6 +49,14 @@ docker compose up -d db                    # juste le Postgres
 
 ```bash
 .venv/bin/pytest        # 36 scénarios : médecin, créneaux, RDV, LWW, patient, connecteur, booking, rappels
+.venv/bin/pytest --cov=app --cov-report=html  # avec coverage
+```
+
+## Linting & Formatting
+
+```bash
+./scripts/lint.sh        # vérifier le code (ruff, black, mypy)
+./scripts/format.sh      # formater le code automatiquement
 ```
 
 ## Essais rapides
@@ -111,3 +121,12 @@ agenda-central/
 - Rappels automatiques SMS/WhatsApp planifiés (`apscheduler`, cf. `employee-hub`)
 - Webhooks vers le SIH (aujourd'hui : polling `since=`)
 - Disponibilités exceptionnelles (jours fériés, blocs)
+
+## Améliorations récentes
+
+- **Sécurité** : CORS configurable, GZip middleware, variables d'environnement pour sécurité
+- **Qualité de code** : ruff (linting), black (formatting), mypy (type checking)
+- **Infrastructure** : Dockerfile multi-stage optimisé, health checks, restart policies
+- **Pagination** : endpoints de liste supportent `page` et `page_size` (max 100)
+- **Tests** : pytest-cov configuré, tests de pagination ajoutés
+- **Logging** : configuration flexible via variables d'environnement
